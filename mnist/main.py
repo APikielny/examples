@@ -6,6 +6,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class Net(nn.Module):
@@ -69,6 +71,70 @@ def test(model, device, test_loader):
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
+activation = {}
+def get_activation(name):
+    def hook(model, input, output):
+        activation[name] = output.detach()
+    return hook
+
+def visualize(dataset):
+
+    model = Net()
+    model.load_state_dict(torch.load("mnist_cnn.pt"))
+
+    model_children = list(model.children())
+
+    print("Model children: ", model_children)
+
+    print("First child: ", model_children[0])
+
+    print("First child shape: ", model_children[0].weight.shape)
+
+    print("First child, first filter shape: ", model_children[0].weight[0,:,:,:].shape)
+
+    #### show the activations of a layer:
+    # plt.imshow(np.reshape(model_children[0].weight[1,:,:,:].detach().numpy(), (3,3)))
+    # plt.show()
+
+    ### visualize feature maps
+
+    data, _ = dataset[0]
+    data.unsqueeze_(0)
+    output = model_children[0](data)
+    plt.imshow(output.detach()[0,0,:,:])
+    plt.show()
+
+
+    # print(len(model_children))
+    # print(model_children[0].weight[0,:,:,:].shape)
+
+
+
+        # data, _ = dataset[0]
+    # data.unsqueeze_(0)
+    # output = model(data)
+
+    # model.conv1.register_forward_hook(get_activation('conv1'))
+
+    # data, _ = dataset[0]
+    # data.unsqueeze_(0)
+    # output = model(data)
+
+    # act = activation['conv1'].squeeze()
+    # print(act.shape)
+    # print(output)
+
+    # fig, axarr = plt.subplots(act.size(0))
+    # for idx in range(act.size(0)):
+    #     axarr[idx].imshow(act[idx])
+    #     plt.show()
+        
+
+    print("here")
+
+
+
+
 
 def main():
     # Training settings
@@ -93,8 +159,21 @@ def main():
                         help='how many batches to wait before logging training status')
     parser.add_argument('--save-model', action='store_true', default=False,
                         help='For Saving the current Model')
+    parser.add_argument('--visualize', action='store_true', default=False)
+
     args = parser.parse_args()
     use_cuda = not args.no_cuda and torch.cuda.is_available()
+
+
+    if(visualize):
+        transform=transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+        ])
+        dataset1 = datasets.MNIST('../data', train=True, download=True,
+                       transform=transform)
+        visualize(dataset1)
+        return
 
     torch.manual_seed(args.seed)
 
@@ -113,8 +192,8 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
         ])
-    dataset1 = datasets.MNIST('../data', train=True, download=True,
-                       transform=transform)
+    # dataset1 = datasets.MNIST('../data', train=True, download=True,
+    #                    transform=transform)
     dataset2 = datasets.MNIST('../data', train=False,
                        transform=transform)
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
