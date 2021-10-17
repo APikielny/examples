@@ -101,8 +101,18 @@ def visualize(dataset):
     data, _ = dataset[0]
     data.unsqueeze_(0)
     output = model_children[0](data)
-    plt.imshow(output.detach()[0,0,:,:])
+
+    fig, axs = plt.subplots(4,8)
+    fig.suptitle('Vertically stacked subplots')
+
+    for col in range(8):
+        for row in range(4):
+            axs[row, col].imshow(output.detach()[0,col+row*8,:,:])
+
     plt.show()
+
+    
+    # axs[1].plot(x, -y)
 
 
     # print(len(model_children))
